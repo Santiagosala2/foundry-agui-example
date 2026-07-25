@@ -1,0 +1,15 @@
+[project]
+name = "foundry-agent-agui"
+version = "0.1.0"
+description = "Sample foundry hosted agent using agui protocol"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "agent-framework>=1.10.0",
+    "agent-framework-ag-ui>=1.0.0rc7",
+    "aiohttp>=3.14.1",
+    "azure-ai-agentserver-invocations>=1.0.0b6",
+    "azure-identity>=1.25.3",
+    "python-dotenv>=1.2.2",
+    "uvicorn>=0.50.2",
+]
