@@ -1,4 +1,5 @@
 "use client";
+import TravelItinerary from "@/components/travel-itinerary";
 import { Card } from "@/components/ui/card";
 import { CopilotSidebar, useAgent, UseAgentUpdate } from "@copilotkit/react-core/v2";
 
@@ -18,15 +19,13 @@ export default function Home() {
     <>
       <CopilotSidebar
         labels={{
-          modalHeaderTitle: "SFWE Design Assitant",
-          welcomeMessageText: "Hi! Let's complete some MES documents together, shall we?",
+          modalHeaderTitle: "Travel Itinerary Assistant",
+          welcomeMessageText: "Hi! Going somewhere, let's make a plan?",
 
         }}
       />
       <main className="flex flex-col min-h-40 items-center justify-center p-6 gap-10" >
-        <Card>
-          d
-        </Card>
+        <TravelItinerary />
       </main>
     </>
   );
