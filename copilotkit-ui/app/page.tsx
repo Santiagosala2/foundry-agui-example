@@ -1,5 +1,5 @@
 "use client";
-import TravelItinerary from "@/components/travel-itinerary";
+import TravelPlanner from "@/components/travel/travel-planner";
 import { Card } from "@/components/ui/card";
 import { CopilotSidebar, useAgent, UseAgentUpdate } from "@copilotkit/react-core/v2";
 
@@ -25,7 +25,7 @@ export default function Home() {
         }}
       />
       <main className="flex flex-col min-h-40 items-center justify-center p-6 gap-10" >
-        <TravelItinerary />
+        <TravelPlanner />
       </main>
     </>
   );
