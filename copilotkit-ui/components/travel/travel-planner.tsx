@@ -5,7 +5,8 @@ import ItineraryDayList from "./itinerary-day-list";
 import TravelForm from "./travel-form";
 
 const TravelPlanner = () => {
-    const { days, syncDays, addActivity, updateActivity, removeActivity } = useItinerary(MOCK_DAYS)
+    const { days, syncDays, addActivity, updateActivity, removeActivity, commitActivityOrder } =
+        useItinerary(MOCK_DAYS)
 
     return (
         <div className="w-full flex flex-col gap-10 max-w-md">
@@ -15,6 +16,7 @@ const TravelPlanner = () => {
                 onAddActivity={addActivity}
                 onUpdateActivity={updateActivity}
                 onRemoveActivity={removeActivity}
+                onTimeCommit={commitActivityOrder}
             />
         </div>
     )

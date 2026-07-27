@@ -6,6 +6,7 @@ type ItineraryDayListProps = {
     onAddActivity: (dayId: string, afterActivityId?: string) => void
     onUpdateActivity: (dayId: string, activityId: string, patch: Partial<Activity>) => void
     onRemoveActivity: (dayId: string, activityId: string) => void
+    onTimeCommit: () => void
 }
 
 const ItineraryDayList = ({
@@ -13,6 +14,7 @@ const ItineraryDayList = ({
     onAddActivity,
     onUpdateActivity,
     onRemoveActivity,
+    onTimeCommit,
 }: ItineraryDayListProps) => (
     <div className="flex flex-col gap-2">
         {days.map((day, index) => (
@@ -23,6 +25,7 @@ const ItineraryDayList = ({
                 onAddActivity={onAddActivity}
                 onUpdateActivity={onUpdateActivity}
                 onRemoveActivity={onRemoveActivity}
+                onTimeCommit={onTimeCommit}
             />
         ))}
     </div>

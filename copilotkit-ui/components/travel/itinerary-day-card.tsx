@@ -10,6 +10,7 @@ type ItineraryDayCardProps = {
     onAddActivity: (dayId: string, afterActivityId?: string) => void
     onUpdateActivity: (dayId: string, activityId: string, patch: Partial<Activity>) => void
     onRemoveActivity: (dayId: string, activityId: string) => void
+    onTimeCommit: () => void
 }
 
 const ItineraryDayCard = ({
@@ -18,6 +19,7 @@ const ItineraryDayCard = ({
     onAddActivity,
     onUpdateActivity,
     onRemoveActivity,
+    onTimeCommit,
 }: ItineraryDayCardProps) => (
     <Card>
         <CardHeader>Day {index + 1}</CardHeader>
@@ -41,6 +43,7 @@ const ItineraryDayCard = ({
                         key={activity.id}
                         activity={activity}
                         onChange={(patch) => onUpdateActivity(day.id, activity.id, patch)}
+                        onTimeCommit={onTimeCommit}
                         onAddAfter={() => onAddActivity(day.id, activity.id)}
                         onRemove={() => onRemoveActivity(day.id, activity.id)}
                     />

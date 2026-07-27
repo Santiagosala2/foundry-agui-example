@@ -8,11 +8,22 @@ import type { Activity } from "@/lib/travel/types"
 type ActivityCardProps = {
     activity: Activity
     onChange: (patch: Partial<Activity>) => void
+    onTimeCommit: () => void
     onAddAfter: () => void
     onRemove: () => void
 }
 
-const ActivityCard = ({ activity, onChange, onAddAfter, onRemove }: ActivityCardProps) => (
+const ACTIVITY_TIME_ATTR = "data-activity-time"
+
+/**
+ * True while focus is moving straight to another activity's time field, where
+ * committing the order would move that field out from under the cursor. The
+ * commit is not lost — it runs when focus finally leaves the time fields.
+ */
+const movesToAnotherTimeField = (next: Element | null) =>
+    Boolean(next?.closest(`[${ACTIVITY_TIME_ATTR}]`))
+
+const ActivityCard = ({ activity, onChange, onTimeCommit, onAddAfter, onRemove }: ActivityCardProps) => (
     <div className="group/activity relative">
         <Card>
             <CardContent className="grid grid-cols-6 items-start gap-4">
@@ -30,6 +41,11 @@ const ActivityCard = ({ activity, onChange, onAddAfter, onRemove }: ActivityCard
                         step="1"
                         value={activity.time}
                         onChange={(event) => onChange({ time: event.target.value })}
+                        onBlur={(event) => {
+                            if (movesToAnotherTimeField(event.relatedTarget)) return
+                            onTimeCommit()
+                        }}
+                        {...{ [ACTIVITY_TIME_ATTR]: "" }}
                         className="w-30 appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
                     />
                 </div>

@@ -2,6 +2,46 @@ import type { Activity, Day } from "./types";
 
 export const sortDays = (a: Day, b: Day) => a.date.getTime() - b.date.getTime()
 
+/** Ascending order over `HH:mm:ss` strings, which compare lexicographically. */
+const byTime = (a: Activity, b: Activity) => a.time.localeCompare(b.time)
+
+/**
+ * Orders each day's timed activities ascending while leaving untimed ones
+ * (`time: ""`) in the slot they already occupy. Returns `days` unchanged when
+ * nothing moves, so React can bail out of the re-render.
+ */
+export function sortActivities(days: Day[]): Day[] {
+    let changed = false
+
+    const next = days.map((day) => {
+        const slots: number[] = []
+        const timed: Activity[] = []
+
+        day.activities.forEach((activity, index) => {
+            if (!activity.time) return
+            slots.push(index)
+            timed.push(activity)
+        })
+
+        timed.sort(byTime)
+
+        const activities = [...day.activities]
+        let moved = false
+
+        slots.forEach((slot, position) => {
+            if (activities[slot] === timed[position]) return
+            activities[slot] = timed[position]
+            moved = true
+        })
+
+        if (!moved) return day
+        changed = true
+        return { ...day, activities }
+    })
+
+    return changed ? next : days
+}
+
 /**
  * Rebuilds the day list for a date range, reusing any day already in `existing`
  * so activities the user typed survive a range change. Day ids are
