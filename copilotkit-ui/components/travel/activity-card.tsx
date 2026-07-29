@@ -28,7 +28,7 @@ const ActivityCard = ({ activity, onChange, onTimeCommit, onAddAfter, onRemove }
         <Card>
             <CardContent className="grid grid-cols-6 items-start gap-4">
                 <Textarea
-                    value={activity.description}
+                    value={activity.description || ""}
                     onChange={(event) => onChange({ description: event.target.value })}
                     placeholder="Add a plan…"
                     rows={1}
@@ -39,7 +39,7 @@ const ActivityCard = ({ activity, onChange, onTimeCommit, onAddAfter, onRemove }
                         type="time"
                         id={`time-${activity.id}`}
                         step="1"
-                        value={activity.time}
+                        value={activity.time || ""}
                         onChange={(event) => onChange({ time: event.target.value })}
                         onBlur={(event) => {
                             if (movesToAnotherTimeField(event.relatedTarget)) return

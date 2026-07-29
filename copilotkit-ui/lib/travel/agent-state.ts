@@ -11,10 +11,19 @@ export type TravelAgentState = {
     days: AgentDay[]
 }
 
+const isValidDate = (date: Date) => !Number.isNaN(date.getTime())
+
 export const toAgentState = (days: Day[]): TravelAgentState => ({
-    days: days.map((day) => ({ ...day, date: day.date.toISOString() })),
+    days: days
+        .filter((day) => isValidDate(day.date))
+        .map((day) => ({ ...day, date: day.date.toISOString() })),
 })
 
+/**
+ * Predictive state streams the agent's tool arguments while they are still
+ * being generated, so a day can arrive with its `date` missing or truncated.
+ * Such days are dropped; the next delta re-delivers them complete.
+ */
 export const fromAgentState = (state: TravelAgentState): Day[] =>
     state.days
         .map((day) => ({
@@ -26,4 +35,5 @@ export const fromAgentState = (state: TravelAgentState): Day[] =>
                 id: activity.id || crypto.randomUUID(),
             })),
         }))
+        .filter((day) => isValidDate(day.date))
         .sort(sortDays)
