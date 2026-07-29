@@ -29,6 +29,11 @@ export function useItinerary(initialDays: Day[] = []) {
         setDays((prev) => itinerary.removeActivity(prev, dayId, activityId))
     }, [])
 
+    const updateDay = useCallback((dayId: string, activities: Activity[]) => {
+        setDays((prev) => itinerary.updateDay(prev, dayId, activities))
+    }, [])
+
+
     /**
      * Puts each day's timed activities back in chronological order. Kept apart
      * from `updateActivity` so edits stay instant and the reorder only lands
@@ -42,6 +47,7 @@ export function useItinerary(initialDays: Day[] = []) {
         days,
         setDays,
         syncDays,
+        updateDay,
         updateActivity,
         addActivity,
         removeActivity,

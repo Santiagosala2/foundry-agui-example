@@ -1,18 +1,10 @@
 "use client";
 import TravelPlanner from "@/components/travel/travel-planner";
-import { Card } from "@/components/ui/card";
-import { CopilotSidebar, useAgent, UseAgentUpdate } from "@copilotkit/react-core/v2";
+import { CopilotSidebar } from "@copilotkit/react-core/v2";
 
 
 
 export default function Home() {
-
-  const { agent } = useAgent({
-    agentId: "sfwe_design_agent",
-    updates: [UseAgentUpdate.OnStateChanged]
-  });
-
-
 
 
   return (

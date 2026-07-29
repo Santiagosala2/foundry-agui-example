@@ -23,18 +23,34 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 credential = DefaultAzureCredential()
     
+class ActivityModel(BaseModel):
+    id: str = Field(description="Stable id. Keep existing ids unchanged; use a new uuid4 for new activities.")
+    description: str = Field(description="What the traveler will do.")
+    time: str = Field(default="", description='24h "HH:MM:SS" time, or "" if unscheduled.')
+
+
+class DayModel(BaseModel):
+    id: str = Field(description='Day id in the form "<country>-<YYYY-MM-DD>". Never change existing ids.')
+    date: str = Field(description="ISO 8601 date for the day.")
+    activities: list[ActivityModel] = Field(default_factory=list)
+
+
+class ItineraryState(BaseModel):
+    days: list[DayModel] = Field(default_factory=list, description="The trip itinerary, one entry per day.")
+
+
 @tool
-def update_form() -> Content:
-    """Update the form with new or modified content.
-    You MUST write the complete form with ALL fields, even when changing only a few fields.
-    When modifying an existing form, include ALL existing data plus your changes.
-    NEVER delete existing data - only modify it.
-    Args:
-        form: The complete form object with all details
-    Returns:
-        Confirmation that the form was updated
+def update_itinerary(days: list[DayModel]) -> Content:
+    """Rewrite the trip itinerary.
+
+    You MUST return the COMPLETE list of days, each with ALL of its activities,
+    even when changing only one activity. Preserve every existing id; only
+    generate new ids (uuid4) for activities you add. NEVER drop days or
+    activities the user created - only modify or extend them.
     """
-    return state_update(text="form updated.", state={"form": form.model_dump()})
+    # agent_framework passes tool arguments as raw dicts; validate explicitly.
+    validated = ItineraryState.model_validate({"days": days})
+    return state_update(text="Itinerary updated.", state=validated.model_dump())
 
 
 # FOUNDRY_PROJECT_ENDPOINT is auto-injected in hosted Foundry containers;
@@ -56,19 +72,24 @@ chat_client = FoundryChatClient(
 )
 
 agent = Agent(
-    name="MyAgent",
-    instructions="You are a helpful assistant",
+    name="TravelAgent",
+    instructions=(
+        "You are a travel-planning assistant collaborating on a shared itinerary. "
+        "The current itinerary is provided as application state. When asked to plan, "
+        "add, or change activities, call update_itinerary with the complete updated "
+        "itinerary. Keep all existing ids and days; times are 24h HH:MM:SS or empty."
+    ),
     client=chat_client,
     default_options={"store": False},
-    tools=[update_form]
+    tools=[update_itinerary],
 )
 
 protocol_runner = AgentFrameworkAgent(
     agent=agent,
-    state_schema={"form": {"type": "object", "description": "The mes form"}},
-    predict_state_config={"form": {"tool": "update_form", "tool_argument": "form"}},
+    # A schema is what turns on "Current state of the application" prompt injection.
+    state_schema=ItineraryState,
+    predict_state_config={"days": {"tool": "update_itinerary", "tool_argument": "days"}},
     require_confirmation=False,
-    
 )
 
 app = InvocationAgentServerHost()

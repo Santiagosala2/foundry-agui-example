@@ -22,7 +22,7 @@ const AGENT_URL =
 //    AG-UI integration to setup the connection.
 const runtime = new CopilotRuntime({
   agents: {
-    sfwe_design_agent: new HttpAgent({ url: AGENT_URL }),
+    travel_agent: new HttpAgent({ url: AGENT_URL }),
   },
 });
 

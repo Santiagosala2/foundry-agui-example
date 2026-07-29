@@ -114,3 +114,14 @@ export function removeActivity(days: Day[], dayId: string, activityId: string): 
             }
     )
 }
+
+export function updateDay(days: Day[], dayId: string, activities: Activity[]): Day[] {
+    return days.map((day) =>
+        day.id !== dayId
+            ? day
+            : {
+                ...day,
+                activities: activities,
+            }
+    )
+}
