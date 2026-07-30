@@ -10,8 +10,8 @@ import type { Activity, Day } from "@/lib/travel/types";
 export function useItinerary(initialDays: Day[] = []) {
     const [days, setDays] = useState<Day[]>(initialDays)
 
-    const syncDays = useCallback((country: string, range?: { from?: Date; to?: Date }) => {
-        setDays((prev) => itinerary.buildDays(prev, country, range?.from, range?.to))
+    const syncDays = useCallback((country: string, city: string, range?: { from?: Date; to?: Date }) => {
+        setDays((prev) => itinerary.buildDays(prev, country, city, range?.from, range?.to))
     }, [])
 
     const updateActivity = useCallback(

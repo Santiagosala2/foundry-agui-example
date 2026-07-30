@@ -22,13 +22,14 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-import { countries } from "@/lib/travel/countries"
+import { City, countries } from "@/lib/travel/countries"
 import {
     TRAVEL_FORM_ID,
     travelFormSchema,
     type TravelFormDraft,
     type TravelFormValues,
 } from "@/lib/travel/schema"
+import { useState } from "react";
 
 type TravelFormProps = {
     /** Fires on every country/date change, including incomplete ones. */
@@ -37,16 +38,21 @@ type TravelFormProps = {
 }
 
 const TravelForm = ({ onValuesChange, onSubmit }: TravelFormProps) => {
+    const [cities, setCities] = useState<City[]>([])
+
     const form = useForm<TravelFormValues>({
         resolver: zodResolver(travelFormSchema),
         defaultValues: {
             country: "",
+            city: "",
             dateRange: {
                 from: undefined,
                 to: undefined
             }
         },
     })
+
+
 
     return (
         <Card>
@@ -68,11 +74,14 @@ const TravelForm = ({ onValuesChange, onSubmit }: TravelFormProps) => {
                                             onValueChange={(value) => {
                                                 // the combobox clears to null; the schema expects a string
                                                 const country = value ?? ""
+
                                                 field.onChange(country)
                                                 onValuesChange?.({
                                                     country,
+                                                    city: form.getValues("city"),
                                                     dateRange: form.getValues("dateRange"),
                                                 })
+                                                if (country) setCities(countries.find(c => c.value === country)?.mainCities ?? [])
                                             }}
                                         >
                                             <ComboboxTrigger render={<Button variant="outline" className="w-64 justify-between font-normal"><ComboboxValue /></Button>} />
@@ -91,6 +100,45 @@ const TravelForm = ({ onValuesChange, onSubmit }: TravelFormProps) => {
                                         {/* {fieldState.invalid && <FieldError errors={[fieldState.error]} />} */}
                                     </Field>
                                 )} />
+                            {<Controller
+                                name="city"
+                                control={form.control}
+                                disabled={form.getValues("country").length === 0}
+                                render={({ field, fieldState }) => (
+                                    <Field orientation="horizontal" data-invalid={fieldState.invalid} >
+                                        <FieldLabel htmlFor={TRAVEL_FORM_ID}>
+                                            City
+                                        </FieldLabel>
+                                        <Combobox
+                                            items={cities}
+                                            value={field.value}
+                                            onValueChange={(value) => {
+                                                // the combobox clears to null; the schema expects a string
+                                                const city = value ?? ""
+                                                field.onChange(city)
+                                                onValuesChange?.({
+                                                    country: form.getValues("country"),
+                                                    city: city,
+                                                    dateRange: form.getValues("dateRange"),
+                                                })
+                                            }}
+                                        >
+                                            <ComboboxTrigger render={<Button variant="outline" className="w-64 justify-between font-normal"><ComboboxValue /></Button>} />
+                                            <ComboboxContent>
+                                                <ComboboxInput showTrigger={false} placeholder="Search" />
+                                                <ComboboxEmpty>No cities found.</ComboboxEmpty>
+                                                <ComboboxList>
+                                                    {(item) => (
+                                                        <ComboboxItem key={item.code} value={item.value}>
+                                                            {item.label}
+                                                        </ComboboxItem>
+                                                    )}
+                                                </ComboboxList>
+                                            </ComboboxContent>
+                                        </Combobox>
+                                        {/* {fieldState.invalid && <FieldError errors={[fieldState.error]} />} */}
+                                    </Field>
+                                )} />}
                             <Controller
                                 name="dateRange"
                                 control={form.control}
@@ -120,6 +168,7 @@ const TravelForm = ({ onValuesChange, onSubmit }: TravelFormProps) => {
                                                         field.onChange(value)
                                                         onValuesChange?.({
                                                             country: form.getValues("country"),
+                                                            city: form.getValues("city"),
                                                             dateRange: value,
                                                         })
                                                     }}
@@ -139,8 +188,9 @@ const TravelForm = ({ onValuesChange, onSubmit }: TravelFormProps) => {
                 <Button disabled={!form.formState.isValid} type="submit" form={TRAVEL_FORM_ID}>
                     Plan
                 </Button>
+
             </CardFooter>
-        </Card>
+        </Card >
     )
 }
 

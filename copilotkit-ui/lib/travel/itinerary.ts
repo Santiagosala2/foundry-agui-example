@@ -47,8 +47,8 @@ export function sortActivities(days: Day[]): Day[] {
  * so activities the user typed survive a range change. Day ids are
  * `${country}-${isoDate}`, so switching country starts a fresh list.
  */
-export function buildDays(existing: Day[], country: string, from?: Date, to?: Date): Day[] {
-    if (!country || !from || !to) return existing
+export function buildDays(existing: Day[], country: string, city: string, from?: Date, to?: Date): Day[] {
+    if (!country || !city || !from || !to) return existing
 
     const days: Day[] = []
     const current = new Date(from)
@@ -56,7 +56,7 @@ export function buildDays(existing: Day[], country: string, from?: Date, to?: Da
 
     while (current <= end) {
         const dateKey = current.toISOString().split("T")[0]
-        const dayId = `${country}-${dateKey}`
+        const dayId = `${country}-${city}-${dateKey}`
         const existingDay = existing.find((day) => day.id === dayId)
 
         days.push(

@@ -30,7 +30,7 @@ class ActivityModel(BaseModel):
 
 
 class DayModel(BaseModel):
-    id: str = Field(description='Day id in the form "<country>-<YYYY-MM-DD>". Never change existing ids.')
+    id: str = Field(description='Day id in the form "<country>-<city>-<YYYY-MM-DD>". Never change existing ids.')
     date: str = Field(description="ISO 8601 date for the day.")
     activities: list[ActivityModel] = Field(default_factory=list)
 

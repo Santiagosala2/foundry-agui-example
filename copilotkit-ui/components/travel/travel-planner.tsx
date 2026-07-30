@@ -30,7 +30,7 @@ const TravelPlanner = () => {
 
     return (
         <div className="w-full flex flex-col gap-10 max-w-md">
-            <TravelForm onValuesChange={(values) => syncDays(values.country, values.dateRange)} onSubmit={onSubmitForm} />
+            <TravelForm onValuesChange={(values) => syncDays(values.country, values.city, values.dateRange)} onSubmit={onSubmitForm} />
             <ItineraryDayList
                 days={days}
                 onAddActivity={addActivity}
