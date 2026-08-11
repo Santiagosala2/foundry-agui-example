@@ -18,15 +18,8 @@ const credential = new DefaultAzureCredential();
 const AGENT_URL =
   process.env.AGUI_AGENT_URL ?? "http://localhost:8088/invocations";
 
-// 2. Create the CopilotRuntime instance and utilize the Microsoft Agent Framework
-//    AG-UI integration to setup the connection.
-const runtime = new CopilotRuntime({
-  agents: {
-    travel_agent: new HttpAgent({ url: AGENT_URL }),
-  },
-});
 
-// 3. Build a Next.js API route that handles the CopilotKit runtime requests.
+// 2. Build a Next.js API route that handles the CopilotKit runtime requests.
 export const POST = async (req: NextRequest) => {
 
 
@@ -37,6 +30,16 @@ export const POST = async (req: NextRequest) => {
     headers["Authorization"] = `Bearer ${token.token}`;
     headers["Foundry-Features"] = "HostedAgents=V1Preview";
   }
+
+  // 3. Create the CopilotRuntime instance and utilize the Microsoft Agent Framework
+  // AG-UI integration to setup the connection.
+
+  const runtime = new CopilotRuntime({
+    agents: {
+      travel_agent: new HttpAgent({ url: AGENT_URL, headers }),
+    },
+  });
+
 
   const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
     runtime,

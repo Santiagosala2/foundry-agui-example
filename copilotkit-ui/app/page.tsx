@@ -6,7 +6,6 @@ import { CopilotSidebar } from "@copilotkit/react-core/v2";
 
 export default function Home() {
 
-
   return (
     <>
       <CopilotSidebar
@@ -22,12 +21,3 @@ export default function Home() {
     </>
   );
 }
-
-// day 
-// date
-// index
-
-
-// activities an array
-// name and link
-
