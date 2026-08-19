@@ -3,6 +3,8 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { CopilotKit } from "@copilotkit/react-core/v2";
 import { cn } from "@/lib/utils";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -32,9 +34,12 @@ export default function RootLayout({
       className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
     >
       <body className="min-h-full flex flex-col bg-white">
-        <CopilotKit runtimeUrl="/api/copilotkit" agent="travel_agent">
-          {children}
-        </CopilotKit>
+        <SidebarProvider>
+          <AppSidebar />
+          <CopilotKit runtimeUrl="/api/copilotkit" agent="travel_agent">
+            {children}
+          </CopilotKit>
+        </SidebarProvider>
       </body>
     </html>
   );
