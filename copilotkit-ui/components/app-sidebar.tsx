@@ -13,7 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { AirplayIcon, CameraIcon, ChartBarIcon, DatabaseIcon, FileIcon, FolderIcon, HelpCircleIcon, LayoutDashboardIcon, ListIcon, SearchIcon, Settings2Icon, SummaryIcon, SwordIcon, UsersIcon } from "lucide-react"
+import { AirplayIcon, CameraIcon, FileIcon } from "lucide-react"
 
 const data = {
   user: {
@@ -54,23 +54,6 @@ const data = {
       ],
     }
   ],
-  chats: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: DatabaseIcon,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: SummaryIcon,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: FileIcon,
-    },
-  ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -94,7 +77,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain />
-        <NavChats items={data.chats} />
+        <NavChats />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

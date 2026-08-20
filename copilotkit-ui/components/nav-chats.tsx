@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -14,32 +16,35 @@ import {
     SidebarMenuAction,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarMenuSkeleton,
     useSidebar,
 } from "@/components/ui/sidebar"
-import { EllipseIcon, EllipsisIcon, FolderIcon, LucideIcon, ShareIcon, Trash2Icon } from "lucide-react"
+import { useChats } from "@/components/chats/chats-provider"
+import { toast } from "@/components/ui/toast"
+import { EllipsisIcon, FolderIcon, MessageSquareIcon, Trash2Icon } from "lucide-react"
 
-export function NavChats({
-    items,
-}: {
-    items: {
-        name: string
-        url: string
-        icon: LucideIcon
-    }[]
-}) {
+export function NavChats() {
     const { isMobile } = useSidebar()
+    const { chats, deleteChat, isLoadingChats } = useChats()
+    const router = useRouter()
 
     return (
         <SidebarGroup className="group-data-[collapsible=icon]:hidden">
             <SidebarGroupLabel>Recent chats</SidebarGroupLabel>
             <SidebarMenu>
-                {items.map((item) => (
-                    <SidebarMenuItem key={item.name}>
+                {isLoadingChats && chats.length === 0 &&
+                    Array.from({ length: 3 }).map((_, index) => (
+                        <SidebarMenuItem key={index}>
+                            <SidebarMenuSkeleton showIcon />
+                        </SidebarMenuItem>
+                    ))}
+                {chats.map((chat) => (
+                    <SidebarMenuItem key={chat.id}>
                         <SidebarMenuButton render={
-                            <a href={item.url}>
-                                <item.icon />
-                                <span>{item.name}</span>
-                            </a>
+                            <Link href={`/chat/${chat.id}`}>
+                                <MessageSquareIcon />
+                                <span>{chat.name}</span>
+                            </Link>
                         }>
                         </SidebarMenuButton>
                         <DropdownMenu>
@@ -60,12 +65,19 @@ export function NavChats({
                                 side={isMobile ? "bottom" : "right"}
                                 align={isMobile ? "end" : "start"}
                             >
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => router.push(`/chat/${chat.id}`)}>
                                     <FolderIcon />
                                     <span>Open</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem variant="destructive">
+                                <DropdownMenuItem
+                                    variant="destructive"
+                                    onClick={() =>
+                                        deleteChat(chat.id).catch(() =>
+                                            toast.add({ description: "Something went wrong deleting the chat", type: "error" })
+                                        )
+                                    }
+                                >
                                     <Trash2Icon />
                                     <span>Delete</span>
                                 </DropdownMenuItem>
@@ -73,12 +85,6 @@ export function NavChats({
                         </DropdownMenu>
                     </SidebarMenuItem>
                 ))}
-                <SidebarMenuItem>
-                    <SidebarMenuButton className="text-sidebar-foreground/70">
-                        <EllipsisIcon className="text-sidebar-foreground/70" />
-                        <span>More</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
             </SidebarMenu>
         </SidebarGroup>
     )
