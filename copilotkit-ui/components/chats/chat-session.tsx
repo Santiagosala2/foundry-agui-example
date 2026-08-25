@@ -19,7 +19,13 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { toast } from "@/components/ui/toast"
-import { TravelFormValues } from "@/lib/travel/schema"
+import {
+    fromStoredForm,
+    toStoredForm,
+    travelFormSchema,
+    type StoredTravelForm,
+    type TravelFormValues,
+} from "@/lib/travel/schema"
 
 /**
  * Chat orchestrator shared by `/` (new chat) and `/chat/[id]` (persisted
@@ -42,6 +48,9 @@ export default function ChatSession({ threadId }: { threadId?: string }) {
     const [openNotFoundDialog, setOpenNotFoundDialog] = useState(false)
     const isThreadFetchedRef = useRef(false)
     const isThreadSavedRef = useRef(false)
+    // A ref, not state: the save subscriber below reads the latest values
+    // without resubscribing on every keystroke.
+    const formValuesRef = useRef<StoredTravelForm>(undefined)
 
 
     // The hook reports not-ready for an empty id, so a new chat never fetches.
@@ -63,7 +72,12 @@ export default function ChatSession({ threadId }: { threadId?: string }) {
                     // overwritten — accepted, the load is fast and one-shot.
                     if (chat.state?.days) {
                         agent.setState(chat.state)
-                        setDefaultFormData(chat.form)
+                    }
+                    // Seed the ref too, so a run started from the sidebar
+                    // without touching the form doesn't patch it away.
+                    if (chat.form) {
+                        formValuesRef.current = chat.form
+                        setDefaultFormData(fromStoredForm(chat.form))
                     }
                 } else {
                     setOpenNotFoundDialog(true)
@@ -85,6 +99,9 @@ export default function ChatSession({ threadId }: { threadId?: string }) {
                     await saveChat(params.agent.threadId, {
                         messages: params.agent.messages,
                         state: params.agent.state as TravelAgentState,
+                        // Omitted while incomplete so a half-filled form never
+                        // patches over an already saved one.
+                        ...(formValuesRef.current && { form: formValuesRef.current }),
                     })
                     if (!isThreadSavedRef.current && !threadId) {
                         // First save of a new chat: adopt the canonical URL
@@ -121,7 +138,13 @@ export default function ChatSession({ threadId }: { threadId?: string }) {
                 />
             )}
             <main className="flex flex-col min-h-20 w-full items-center justify-center p-6 gap-10">
-                <TravelPlanner defaultFormData={defaultFormData} />
+                <TravelPlanner
+                    defaultFormData={defaultFormData}
+                    onFormValuesChange={(values) => {
+                        const parsed = travelFormSchema.safeParse(values)
+                        if (parsed.success) formValuesRef.current = toStoredForm(parsed.data)
+                    }}
+                />
             </main>
         </>
     )

@@ -5,7 +5,7 @@ import { deleteChat as deleteChatAction, getChats, postChat } from "@/lib/chats/
 import type { Chat, ChatPatchKeys } from "@/lib/chats/types"
 import { Toaster } from "@/components/ui/toast"
 
-type ChatPatch = Pick<Partial<Chat>, "messages" | "state">
+type ChatPatch = Pick<Partial<Chat>, "messages" | "state" | "form">
 
 interface ChatsContextType {
     chats: Chat[]

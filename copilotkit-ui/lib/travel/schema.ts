@@ -25,4 +25,29 @@ export type TravelFormDraft = {
     dateRange?: { from?: Date; to?: Date }
 }
 
+/**
+ * Persisted form values must survive a JSON round-trip to Cosmos, so the date
+ * range crosses the boundary as ISO strings and is revived on the way back
+ * (same shape of trade as `AgentDay` in `lib/travel/agent-state.ts`).
+ */
+export type StoredTravelForm = Omit<TravelFormValues, "dateRange"> & {
+    dateRange: { from: string; to: string }
+}
+
+export const toStoredForm = (values: TravelFormValues): StoredTravelForm => ({
+    ...values,
+    dateRange: {
+        from: values.dateRange.from.toISOString(),
+        to: values.dateRange.to.toISOString(),
+    },
+})
+
+export const fromStoredForm = (stored: StoredTravelForm): TravelFormValues => ({
+    ...stored,
+    dateRange: {
+        from: new Date(stored.dateRange.from),
+        to: new Date(stored.dateRange.to),
+    },
+})
+
 export const TRAVEL_FORM_ID = "form-travel-itinerary"

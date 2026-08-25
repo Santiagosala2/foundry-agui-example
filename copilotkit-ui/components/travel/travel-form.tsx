@@ -1,7 +1,7 @@
 "use client";
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
-import { Controller, useForm } from "react-hook-form"
+import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
     Combobox,
@@ -22,14 +22,14 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-import { City, countries } from "@/lib/travel/countries"
+import { countries } from "@/lib/travel/countries"
 import {
     TRAVEL_FORM_ID,
     travelFormSchema,
     type TravelFormDraft,
     type TravelFormValues,
 } from "@/lib/travel/schema"
-import { useState } from "react";
+import { useEffect } from "react";
 
 const DEFAULT_FORM_VALUES = {
     country: "",
@@ -48,13 +48,22 @@ type TravelFormProps = {
 }
 
 const TravelForm = ({ defaultFormData, onValuesChange, onSubmit }: TravelFormProps) => {
-    const [cities, setCities] = useState<City[]>([])
 
     const form = useForm<TravelFormValues>({
         resolver: zodResolver(travelFormSchema),
         defaultValues: defaultFormData || DEFAULT_FORM_VALUES
 
     })
+
+    // Derived rather than state, so a restored country lists its cities too.
+    const selectedCountry = useWatch({ control: form.control, name: "country" })
+    const cities = countries.find((c) => c.value === selectedCountry)?.mainCities ?? []
+
+    // `defaultValues` only applies on the first render, but a restored chat
+    // resolves its form asynchronously — reset once it arrives.
+    useEffect(() => {
+        if (defaultFormData) form.reset(defaultFormData)
+    }, [defaultFormData, form])
 
 
     return (
@@ -84,7 +93,6 @@ const TravelForm = ({ defaultFormData, onValuesChange, onSubmit }: TravelFormPro
                                                     city: form.getValues("city"),
                                                     dateRange: form.getValues("dateRange"),
                                                 })
-                                                if (country) setCities(countries.find(c => c.value === country)?.mainCities ?? [])
                                             }}
                                         >
                                             <ComboboxTrigger render={<Button variant="outline" className="w-64 justify-between font-normal"><ComboboxValue /></Button>} />
@@ -106,7 +114,7 @@ const TravelForm = ({ defaultFormData, onValuesChange, onSubmit }: TravelFormPro
                             {<Controller
                                 name="city"
                                 control={form.control}
-                                disabled={form.getValues("country").length === 0}
+                                disabled={selectedCountry.length === 0}
                                 render={({ field, fieldState }) => (
                                     <Field orientation="horizontal" data-invalid={fieldState.invalid} >
                                         <FieldLabel htmlFor={TRAVEL_FORM_ID}>
