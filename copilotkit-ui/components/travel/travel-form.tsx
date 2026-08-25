@@ -31,27 +31,30 @@ import {
 } from "@/lib/travel/schema"
 import { useState } from "react";
 
+const DEFAULT_FORM_VALUES = {
+    country: "",
+    city: "",
+    dateRange: {
+        from: undefined,
+        to: undefined
+    }
+}
+
 type TravelFormProps = {
     /** Fires on every country/date change, including incomplete ones. */
     onValuesChange?: (values: TravelFormDraft) => void
     onSubmit?: (values: TravelFormValues) => void
+    defaultFormData: TravelFormValues | undefined
 }
 
-const TravelForm = ({ onValuesChange, onSubmit }: TravelFormProps) => {
+const TravelForm = ({ defaultFormData, onValuesChange, onSubmit }: TravelFormProps) => {
     const [cities, setCities] = useState<City[]>([])
 
     const form = useForm<TravelFormValues>({
         resolver: zodResolver(travelFormSchema),
-        defaultValues: {
-            country: "",
-            city: "",
-            dateRange: {
-                from: undefined,
-                to: undefined
-            }
-        },
-    })
+        defaultValues: defaultFormData || DEFAULT_FORM_VALUES
 
+    })
 
 
     return (

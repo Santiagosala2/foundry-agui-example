@@ -19,6 +19,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { toast } from "@/components/ui/toast"
+import { TravelFormValues } from "@/lib/travel/schema"
 
 /**
  * Chat orchestrator shared by `/` (new chat) and `/chat/[id]` (persisted
@@ -34,12 +35,18 @@ export default function ChatSession({ threadId }: { threadId?: string }) {
     const { saveChat, fetchChats } = useChats()
     const router = useRouter()
 
+
+    const [defaultFormData, setDefaultFormData] = useState<TravelFormValues>()
+
     const [, startFetchingChat] = useTransition()
     const [openNotFoundDialog, setOpenNotFoundDialog] = useState(false)
     const isThreadFetchedRef = useRef(false)
     const isThreadSavedRef = useRef(false)
+
+
     // The hook reports not-ready for an empty id, so a new chat never fetches.
     const isAgentReady = useAgentReady(agent, threadId ?? "")
+
 
     // Restore a persisted chat once the agent carries the URL's thread id.
     useEffect(() => {
@@ -56,6 +63,7 @@ export default function ChatSession({ threadId }: { threadId?: string }) {
                     // overwritten — accepted, the load is fast and one-shot.
                     if (chat.state?.days) {
                         agent.setState(chat.state)
+                        setDefaultFormData(chat.form)
                     }
                 } else {
                     setOpenNotFoundDialog(true)
@@ -113,7 +121,7 @@ export default function ChatSession({ threadId }: { threadId?: string }) {
                 />
             )}
             <main className="flex flex-col min-h-20 w-full items-center justify-center p-6 gap-10">
-                <TravelPlanner />
+                <TravelPlanner defaultFormData={defaultFormData} />
             </main>
         </>
     )

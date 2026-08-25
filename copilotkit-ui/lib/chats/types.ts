@@ -1,5 +1,6 @@
 import type { Message } from "@ag-ui/client"
 import type { TravelAgentState } from "@/lib/travel/agent-state"
+import { TravelFormValues } from "../travel/schema"
 
 /**
  * A persisted conversation. The document id is the CopilotKit thread id
@@ -13,6 +14,7 @@ export type Chat = {
     name: string
     messages: Message[]
     state?: TravelAgentState
+    form?: TravelFormValues
     createdAt: string
     updatedAt: string
 }

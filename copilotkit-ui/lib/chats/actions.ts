@@ -28,6 +28,7 @@ export async function postChat(
         email,
         messages: partialChat.messages ?? [],
         state: partialChat.state,
+        form: partialChat.form,
         updatedAt: now,
     }
 
