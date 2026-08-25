@@ -3,8 +3,15 @@ import { useAgentItinerary } from "@/hooks/use-agent-itinerary";
 import ItineraryDayList from "./itinerary-day-list";
 import TravelForm from "./travel-form";
 import { useAgent, UseAgentUpdate, useCopilotKit } from "@copilotkit/react-core/v2";
+import { TravelFormDraft, TravelFormValues } from "@/lib/travel/schema";
 
-const TravelPlanner = () => {
+type TravelPlannerProps = {
+    defaultFormData: TravelFormValues | undefined
+    /** Fires on every form edit, including incomplete ones. */
+    onFormValuesChange?: (values: TravelFormDraft) => void
+}
+
+const TravelPlanner = ({ defaultFormData, onFormValuesChange }: TravelPlannerProps) => {
     const { days, syncDays, addActivity, updateActivity, removeActivity, commitActivityOrder } =
         useAgentItinerary()
 
@@ -30,7 +37,14 @@ const TravelPlanner = () => {
 
     return (
         <div className="w-full flex flex-col gap-10 max-w-md">
-            <TravelForm onValuesChange={(values) => syncDays(values.country, values.city, values.dateRange)} onSubmit={onSubmitForm} />
+            <TravelForm
+                defaultFormData={defaultFormData}
+                onValuesChange={(values) => {
+                    syncDays(values.country, values.city, values.dateRange)
+                    onFormValuesChange?.(values)
+                }}
+                onSubmit={onSubmitForm}
+            />
             <ItineraryDayList
                 days={days}
                 onAddActivity={addActivity}
