@@ -16,6 +16,12 @@ separate AG-UI FastAPI app that forwards requests to the hosted agent, but Found
 AG-UI needs. `AgentFrameworkAgent` runs fine inside the hosted container — you just serve its
 events yourself through the invocations handler.
 
+The second thing you hit right after wiring that up: **chat history**. The invocations protocol
+stores no conversation history — Foundry only keeps raw session data (the sandbox's `$HOME` and
+`/files`, deleted after 30 days of inactivity). The client is the source of truth for the
+conversation, so this example persists chats (messages, shared state and even the travel form
+values) in **Azure Cosmos DB**. See [Chat history with Cosmos DB](#chat-history-with-cosmos-db).
+
 ## How it fits together
 
 ```
@@ -23,6 +29,7 @@ events yourself through the invocations handler.
 │ copilotkit-ui (Next.js)     │
 │  useAgent()                 │  @copilotkit/react-core/v2 — reacts to agent state
 │  app/api/copilotkit/route.ts│  CopilotRuntime + HttpAgent (@ag-ui/client)
+│  lib/chats/actions.ts ──────┼──► Azure Cosmos DB — chat history (travel / chats)
 └──────────────┬──────────────┘
                │ AG-UI events over SSE
                ▼
@@ -86,6 +93,89 @@ are pushed to the agent with `agent.setState(...)`, agent snapshots (and streame
 adopted into local state, and a ref with the last synced snapshot suppresses echoes in both
 directions.
 
+## Chat history with Cosmos DB
+
+### Why the UI has to own history
+
+With the Responses protocol, Foundry manages conversation history for you: a conversation id is a
+durable record of messages stored in the platform. **The invocations protocol has none of that.**
+The only thing Foundry persists per session is the sandbox's raw state (`$HOME` and files uploaded
+via `/files`), and even that is deleted after 30 days of inactivity — the
+[sessions and conversations docs](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agents#sessions-and-conversations)
+are explicit that with invocations "you manage state in your own code", suggesting "in-memory,
+Cosmos DB, etc.".
+
+This fits how AG-UI works anyway: every request carries the *full* conversation (messages + shared
+state) in its body, and the agent's `invoke_handler` in [`main.py`](foundry-agent/main.py) is
+stateless — it even sets `default_options={"store": False}` so nothing is retained server-side.
+Which means the browser's in-memory agent is the only copy of your chat: refresh the page and it's
+gone. Cosmos DB fills exactly that gap.
+
+### The data model
+
+One document per chat, in database `travel`, container `chats`, partition key `/email`
+([`lib/chats/types.ts`](copilotkit-ui/lib/chats/types.ts)):
+
+```ts
+export type Chat = {
+    id: string            // the CopilotKit thread id
+    email: string         // Cosmos partition key — who owns the chat
+    name: string          // display name, e.g. "Trip 24 Aug 2026, 3:12 PM"
+    messages: Message[]   // AG-UI messages (@ag-ui/client)
+    state?: TravelAgentState   // itinerary snapshot (the shared state)
+    form?: StoredTravelForm    // travel form values, dates as ISO strings
+    createdAt: string
+    updatedAt: string
+}
+```
+
+Using the thread id as the document id and the user's email as the partition key means every read
+is a cheap point read and every listing is a single-partition query.
+
+### Saving
+
+[`components/chats/chat-session.tsx`](copilotkit-ui/components/chats/chat-session.tsx) registers
+an `AgentSubscriber` and saves on `onRunFinalized` — once per completed agent run, not per token.
+It calls a **server action** ([`lib/chats/actions.ts`](copilotkit-ui/lib/chats/actions.ts)) that
+does a patch-first upsert: patch only the changed fields (plus `updatedAt`), and fall through to a
+create on 404 — there's no separate create action, and no `/api/chats` REST route either.
+
+One subtlety: on the first save of a new chat the URL becomes `/chat/<threadId>` via
+`window.history.pushState`, *not* `router.push` — a Next.js navigation would remount the tree and
+throw away the in-memory agent mid-conversation.
+
+### Restoring
+
+Opening `/chat/[id]` mounts the same `ChatSession` component with the thread id from the URL.
+CopilotKit binds that id to the agent asynchronously and mutates the agent object in place with no
+event to subscribe to, so [`hooks/use-agent-ready.ts`](copilotkit-ui/hooks/use-agent-ready.ts)
+polls until `agent.threadId` matches. Then the chat document is point-read and replayed:
+`agent.setMessages(...)` restores the transcript, `agent.setState(...)` restores the itinerary,
+and the travel form is reset from the stored values (`form.reset` in an effect — `defaultValues`
+only applies on first render, and the chat resolves async). Unknown ids get a not-found dialog
+that routes back home. The sidebar ([`components/nav-chats.tsx`](copilotkit-ui/components/nav-chats.tsx))
+lists the 10 most recent chats by `updatedAt`.
+
+### Who is the user
+
+There's no sign-in in this example. [`lib/chats/user.ts`](copilotkit-ui/lib/chats/user.ts) exposes
+`getCurrentUserEmail()`, which just returns `DEFAULT_USER_EMAIL` (default `demo@example.com`).
+It's async on purpose: every server action resolves the partition key through it, so swapping in a
+real session lookup (e.g. NextAuth's `auth()`) touches exactly one file.
+
+### Setting up Cosmos DB
+
+There's no infra-as-code for Cosmos in this repo, so create it once by hand (portal or CLI):
+
+1. A Cosmos DB **NoSQL** account
+2. A database named `travel`
+3. A container named `chats` with partition key `/email`
+
+The names are hardcoded in [`lib/chats/actions.ts`](copilotkit-ui/lib/chats/actions.ts). Auth is
+environment-dependent ([`lib/cosmos.ts`](copilotkit-ui/lib/cosmos.ts)): in development the account
+key (`COSMOS_KEY`) is used; in production the client switches to `DefaultAzureCredential`, which
+needs the Cosmos DB **Built-in Data Contributor** data-plane role assigned to the app's identity.
+
 ## Running it locally
 
 You need to be logged in with `az login` — the agent uses `DefaultAzureCredential` to call the
@@ -106,7 +196,19 @@ pip install -r requirements.txt
 python main.py
 ```
 
-The UI needs no `.env` locally (it falls back to `http://localhost:8088/invocations`):
+The UI finds the local agent without configuration (it falls back to
+`http://localhost:8088/invocations`), but it *does* need a `.env` for the chat history — see
+[Setting up Cosmos DB](#setting-up-cosmos-db) for creating the `travel` database and `chats`
+container. Create a `.env` inside `copilotkit-ui/`:
+
+```
+COSMOS_ENDPOINT="https://[your-cosmos-account].documents.azure.com:443/"
+COSMOS_KEY="[account key — dev only; production uses DefaultAzureCredential]"
+DEFAULT_USER_EMAIL="demo@example.com"
+COPILOTKIT_TELEMETRY_DISABLED=true
+```
+
+Then start it:
 
 ```bash
 cd copilotkit-ui
@@ -138,7 +240,7 @@ inspector in your browser.
 ## Pointing the UI at the deployed agent
 
 Go into the hosted agent's details in the Foundry portal and copy the invocations endpoint. Then
-create a `.env` inside `copilotkit-ui/`:
+add it to the `.env` inside `copilotkit-ui/` (keeping the Cosmos variables from above):
 
 ```
 AGUI_AGENT_URL="https://[foundry-resource-name].services.ai.azure.com/api/projects/[project-name]/agents/[agent-name]/endpoint/protocols/invocations?api-version=v1"
@@ -146,11 +248,14 @@ AGUI_AGENT_URL="https://[foundry-resource-name].services.ai.azure.com/api/projec
 
 Whoever calls that endpoint needs the **Foundry User** RBAC role on the Foundry resource. Locally
 that's you (via `az login`); if the UI runs on App Service or similar, turn on its managed
-identity and assign the role to it.
+identity and assign the role to it. The same identity story applies to the chat history: in
+production drop `COSMOS_KEY` and give that managed identity the Cosmos DB **Built-in Data
+Contributor** data-plane role instead.
 
 ## References
 
 - [Hosted agents — which protocol should I use?](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agents#which-protocol-should-i-use)
+- [Hosted agents — sessions and conversations](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agents#sessions-and-conversations) (why chat history is the client's job with invocations)
 - [Quickstart: deploy your first hosted agent (azd)](https://learn.microsoft.com/en-us/azure/foundry/agents/quickstarts/quickstart-hosted-agent?pivots=azd)
 - [Agent Framework AG-UI recipe agent example](https://github.com/microsoft/agent-framework/blob/main/python/packages/ag-ui/agent_framework_ag_ui_examples/agents/recipe_agent.py)
 - [Foundry samples — basic invocations agent](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/agent-framework/invocations/01-basic/src/agent-framework-agent-basic-invocations/main.py)
